@@ -228,7 +228,7 @@ class QuizEngine{
  available(id,d){const n=this.node(id);return Number.isInteger(d)&&d>=0&&d<=n.reviewedLevel&&(this.school==='CMU'?n.banks[d].questions.length===TARGETS[d]:n.comparison.status==='DIFFERENCE_CONFIRMED'&&n.banks[d].questions.length>=10);}
  reason(id,d){const n=this.node(id),b=this.bank(id,d);if(this.school!=='CMU'&&n.comparison.status!=='DIFFERENCE_CONFIRMED')return n.comparison.reason;if(d>n.reviewedLevel)return '超過已審深度，尚不可出題。';if(this.school==='CMU'&&b.questions.length!==b.target)return '中國醫題庫尚未足額。';if(b.questions.length<10)return '本深度已有 '+b.questions.length+' 題新增考點練習，未滿十題，暫不開放十題測驗。';return '';}
  select(id,d=0){this.bank(id,d);this.selected={id,d};this.write(this.prefix+'selection',{id,d,version:this.node(id).version});return this.current();}
- restoreSelection(){const x=this.read(this.prefix+'selection');if(x&&this.nodes.has(x.id)&&this.node(x.id).version===x.version&&Number.isInteger(x.d)&&x.d>=0&&x.d<=2){this.selected={id:x.id,d:x.d};return true;}return false;}
+ restoreSelection(){const x=this.read(this.prefix+'selection');if(x&&this.nodes.has(x.id)&&this.node(x.id).version===x.version&&Number.isInteger(x.d)&&x.d>=0&&x.d<=2){this.selected={id:x.id,d:x.d};return true;}if(x)this.notice('題庫已更新或原選擇紀錄不適用，請重新開始測驗；舊作答紀錄保留，成績不會套用到新版題目。');return false;}
  bank(id,d){const n=this.node(id);assert(Number.isInteger(d)&&d>=0&&d<=2,'無效的測驗深度。');return n.banks[d];}
  validateSession(s,id,d){
   if(!s)return false;
