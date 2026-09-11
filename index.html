@@ -226,7 +226,7 @@ class QuizEngine{
  }
  reached(id){const v=this.read(this.key(id,'level'));return Number.isInteger(v)&&v>=0&&v<=this.node(id).reviewedLevel?v:0;}
  available(id,d){const n=this.node(id);return Number.isInteger(d)&&d>=0&&d<=n.reviewedLevel&&(this.school==='CMU'?n.banks[d].questions.length===TARGETS[d]:n.comparison.status==='DIFFERENCE_CONFIRMED'&&n.banks[d].questions.length>=10);}
- reason(id,d){const n=this.node(id),b=this.bank(id,d);if(this.school!=='CMU'&&n.comparison.status!=='DIFFERENCE_CONFIRMED')return n.comparison.reason;if(d>n.reviewedLevel)return '超過已審深度，尚不可出題。';if(this.school==='CMU'&&b.questions.length!==b.target)return '中國醫題庫尚未足額。';if(b.questions.length<10)return '本深度已有 '+b.questions.length+' 題新增考點練習，未滿十題，暫不開放十題測驗。';return '';}
+ reason(id,d){const n=this.node(id),b=this.bank(id,d);if(d>n.reviewedLevel)return '不適用：超過本節有效深度';if(this.school!=='CMU'&&n.comparison.status!=='DIFFERENCE_CONFIRMED')return n.comparison.reason;if(this.school==='CMU'&&b.questions.length!==b.target)return '中國醫題庫尚未足額。';if(b.questions.length<10)return '本深度已有 '+b.questions.length+' 題新增考點練習，未滿十題，暫不開放十題測驗。';return '';}
  select(id,d=0){this.bank(id,d);this.selected={id,d};this.write(this.prefix+'selection',{id,d,version:this.node(id).version});return this.current();}
  restoreSelection(){const x=this.read(this.prefix+'selection');if(x&&this.nodes.has(x.id)&&this.node(x.id).version===x.version&&Number.isInteger(x.d)&&x.d>=0&&x.d<=2){this.selected={id:x.id,d:x.d};return true;}if(x)this.notice('題庫已更新或原選擇紀錄不適用，請重新開始測驗；舊作答紀錄保留，成績不會套用到新版題目。');return false;}
  bank(id,d){const n=this.node(id);assert(Number.isInteger(d)&&d>=0&&d<=2,'無效的測驗深度。');return n.banks[d];}
@@ -280,6 +280,7 @@ function messages(){const text=engine.messages.join(' ');$('storage-message').te
 function node(){return engine.node(engine.selected.id);}
 function schoolName(){return schoolData.schools.find(s=>s.code===engine.school).name;}
 function countLabel(n,bank){
+ if(n.banks.indexOf(bank)>n.reviewedLevel)return '不適用';
  if(engine.school==='CMU')return bank.questions.length+'／'+bank.target+' 題';
  if(['WAITING_SOURCE','PENDING_COMPARISON'].includes(n.comparison.status))return '待比對';
  return bank.questions.length+' 題';
@@ -322,7 +323,7 @@ function renderSelection(){
  $('selection-counts').textContent=n.banks.map(b=>b.depth+' '+countLabel(n,b)).join(' · ');
  $('resume-set').hidden=!s||!available;$('start-set').disabled=!available;$('start-set').textContent=s?'重新抽10題':'開始十題練習';
  $('selection-state').textContent=available?(s?'已有本組紀錄：'+engine.statistics(s).answered+'／10 題已答。':'從這個學校、章節與深度抽出十道不重複題目。'):engine.reason(n.id,d);
- $('selection-blocked-depth').textContent=engine.school==='CMU'?n.banks.filter((b,i)=>i>n.reviewedLevel).map(b=>b.depth+' '+countLabel(n,b)+'：超過已審深度，尚不可出題').join('；'):(available?(n.banks[d].questions.length<20?'本深度補充題少於20題；再練習時優先選未在前組出現的題，部分題目可能再次出現。':'只練習相對中國醫新增的考點。'):'');
+ $('selection-blocked-depth').textContent=d>n.reviewedLevel?'不適用：超過本節有效深度':engine.school==='CMU'?n.banks.filter((b,i)=>i>n.reviewedLevel).map(b=>b.depth+'：不適用，超過本節有效深度').join('；'):(available?(n.banks[d].questions.length<20?'本深度補充題少於20題；再練習時優先選未在前組出現的題，部分題目可能再次出現。':'只練習相對中國醫新增的考點。'):'');
 }
 function render(){
  const n=node(),s=engine.current();$('route-label').textContent='路線深度：'+n.routeDepth;
